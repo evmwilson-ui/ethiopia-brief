@@ -78,7 +78,7 @@ RULES:
 
         response = client.messages.create(
             model=MODEL,
-            max_tokens=16000,
+            max_tokens=4000,
             tools=[{"type": "web_search_20250305", "name": "web_search"}],
             messages=messages,
         )
@@ -271,7 +271,10 @@ def send_email(html, date):
     msg.attach(MIMEText(html, "html"))
 
     try:
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+        with smtplib.SMTP("smtp.gmail.com", 587) as server:
+            server.ehlo()
+            server.starttls()
+            server.ehlo()
             server.login(SENDER_EMAIL, GMAIL_APP_PASSWORD)
             server.sendmail(SENDER_EMAIL, RECIPIENTS, msg.as_string())
         print(f"Email sent to {', '.join(RECIPIENTS)}")
