@@ -5,18 +5,19 @@ Requires: pip install anthropic
 
 import anthropic
 import json
+import os
 import re
 import smtplib
 from datetime import datetime, timedelta
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
-# ─── CONFIG (paste your keys here) ───────────────────────────────────
-ANTHROPIC_API_KEY = "sk-ant-..."              # Your Anthropic API key
-GMAIL_APP_PASSWORD = "xxxx xxxx xxxx xxxx"    # Your Gmail app password
-SENDER_EMAIL = "ev.m.wilson@gmail.com"
-RECIPIENTS = ["pilagi@gmail.com"]
-MODEL = "claude-sonnet-4-5-20250929"          # or "claude-opus-4-6" for higher quality
+# ─── CONFIG ───────────────────────────────────────────────────────────
+ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY")
+GMAIL_APP_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD")
+SENDER_EMAIL = os.environ.get("SENDER_EMAIL")
+RECIPIENTS = os.environ.get("RECIPIENTS", "").split(",")
+MODEL = "claude-sonnet-4-6"
 # ─────────────────────────────────────────────────────────────────────
 
 
@@ -67,7 +68,7 @@ RULES:
 
     messages = [{"role": "user", "content": prompt}]
     all_text = ""
-    max_rounds = 15  # safety limit
+    max_rounds = 15
 
     for round_num in range(max_rounds):
         print(f"  API call {round_num + 1}...")
@@ -79,18 +80,15 @@ RULES:
             messages=messages,
         )
 
-        # Collect any text from this response
         assistant_content = response.content
         for block in assistant_content:
             if block.type == "text":
                 all_text += block.text
 
-        # If model is done, break
         if response.stop_reason != "tool_use":
             print(f"  Done (stop_reason: {response.stop_reason})")
             break
 
-        # Otherwise, feed tool results back and continue
         messages.append({"role": "assistant", "content": assistant_content})
 
         tool_results = []
@@ -106,7 +104,6 @@ RULES:
         if tool_results:
             messages.append({"role": "user", "content": tool_results})
 
-    # Try to extract JSON from all collected text
     json_text = all_text.strip()
 
     if not json_text:
@@ -115,11 +112,9 @@ RULES:
             print(f"  - {block.type}")
         raise RuntimeError("Claude did not return any text. Check your API key and model name.")
 
-    # Clean up markdown fences if present
     json_text = re.sub(r"^```(?:json)?\s*", "", json_text)
     json_text = re.sub(r"\s*```$", "", json_text)
 
-    # Try to find JSON object in the text (in case there's preamble)
     match = re.search(r"\{.*\}", json_text, re.DOTALL)
     if match:
         json_text = match.group(0)
