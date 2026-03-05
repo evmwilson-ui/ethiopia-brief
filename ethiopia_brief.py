@@ -8,6 +8,7 @@ import json
 import os
 import re
 import smtplib
+import time
 from datetime import datetime, timedelta
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -72,10 +73,12 @@ RULES:
 
     for round_num in range(max_rounds):
         print(f"  API call {round_num + 1}...")
+        if round_num > 0:
+            time.sleep(30)
 
         response = client.messages.create(
             model=MODEL,
-            max_tokens=4000,
+            max_tokens=16000,
             tools=[{"type": "web_search_20250305", "name": "web_search"}],
             messages=messages,
         )
