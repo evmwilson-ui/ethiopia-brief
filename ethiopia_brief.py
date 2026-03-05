@@ -75,7 +75,7 @@ RULES:
 
         response = client.messages.create(
             model=MODEL,
-            max_tokens=16000,
+            max_tokens=4000,
             tools=[{"type": "web_search_20250305", "name": "web_search"}],
             messages=messages,
         )
